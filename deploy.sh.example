@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Xserver へ SFTP でアップロードする簡易デプロイスクリプト（テンプレート）。
+#
+# 使い方:
+#   1) このファイルを deploy.sh にコピー
+#        cp deploy.sh.example deploy.sh
+#   2) 下の変数を自分の環境に合わせて書き換え
+#   3) lftp をインストール（mac: brew install lftp / Ubuntu: apt install lftp）
+#   4) ./deploy.sh
+#
+# 認証はパスワードを聞かれます。鍵認証を使う場合は lftp の設定を調整してください。
+set -euo pipefail
+
+# ===== 要設定 =====
+HOST="svXXXX.xserver.jp"          # Xserver の SFTP ホスト名
+USER="あなたのサーバーID"           # FTP/SFTP ユーザー名
+PORT="10022"                      # Xserver の SFTP は通常 10022
+REMOTE_DIR="/ドメイン名/public_html/quickob"  # 公開先ディレクトリ
+# ==================
+
+LOCAL_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# .git や deploy スクリプト自体はアップロードしない
+lftp -u "$USER" -p "$PORT" "sftp://$HOST" <<EOF
+mirror --reverse --delete --verbose \
+  --exclude .git/ \
+  --exclude deploy.sh \
+  --exclude deploy.sh.example \
+  --exclude .htpasswd \
+  "$LOCAL_DIR" "$REMOTE_DIR"
+bye
+EOF
+
+echo "デプロイ完了: $REMOTE_DIR"

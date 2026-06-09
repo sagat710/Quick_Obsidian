@@ -13,20 +13,30 @@
 - 🆕 **新規ノート** と 🗓️ **デイリーノートへ追記** の2モード
 - 📲 PWA対応：ホーム画面に追加してネイティブアプリのように使用
 - ✈️ オフライン対応：圏外でも下書きを保持し、オンライン復帰時に自動送信
-- 🔒 サーバー不要。GitHubトークンは端末内 (`localStorage`) にのみ保存
+- 🔒 個人用：Basic認証で他人の利用を防止。GitHubトークンは端末内 (`localStorage`) にのみ保存
+
+> 個人用途を想定しています。配信ファイルに秘密情報は含まれません（トークンはスマホ内のみ）。
+> URLを知られても、Basic認証とトークンが無ければ他人はメモを保存できません。
 
 ---
 
 ## セットアップ
 
-### 1. ホスティング（GitHub Pages）
+### 1. ホスティング（Xserver）
 
-このリポジトリの **Settings → Pages** で、Source を「GitHub Actions」にすると、
-`main` への push 時に自動でデプロイされます（`.github/workflows/pages.yml` 同梱）。
+専用アドレス（例 `https://quickob.example.com/`、またはサブディレクトリ `…/quickob/`）に、
+このリポジトリのファイル一式をアップロードします。
 
-数十秒後に `https://<ユーザー名>.github.io/<リポジトリ名>/` で公開されます。
+1. Xserver で対象ドメイン/サブドメインを用意し、**無料独自SSL** を有効化（HTTPS必須）
+2. ファイルを公開ディレクトリ（例 `public_html/quickob/`）へアップロード
+   - サーバーパネルの **ファイルマネージャ**、または FTP/SFTP クライアントで
+   - 繰り返しデプロイするなら同梱の `deploy.sh.example` を `deploy.sh` にコピーして使用（lftp使用、SFTPポートは通常 `10022`）
+3. **Basic認証で保護**（初回のみログイン必須にする）
+   - **推奨**：サーバーパネル →「アクセス制限」で対象フォルダを ON にし、ユーザー名・パスワードを設定（`.htaccess`/`.htpasswd` 自動生成）
+   - 手動設定派は同梱 `.htaccess` 内のコメント手順を参照
+4. `https://（あなたの専用アドレス）/` を開いて表示確認
 
-> 静的ファイルだけなので、Netlify / Cloudflare Pages / Vercel などにそのまま置いても動きます。
+> 同梱の `.htaccess` がHTTPS強制・正しいMIME・Service Workerのキャッシュ制御を行います。
 > ローカル確認は `python3 -m http.server 8080` でも可。**HTTPSまたはlocalhostでのみ** Service Worker が動作します。
 
 ### 2. GitHub トークンを作成
@@ -74,8 +84,9 @@
 
 ## 保存先・データの扱い
 
-- メモは GitHub Contents API でリポジトリにコミットされます（外部サーバーを一切経由しません）。
+- メモは GitHub Contents API でVaultリポジトリに直接コミットされます（ホスティングのサーバーはメモ内容を保持しません）。
 - トークンと下書きはブラウザの `localStorage` にのみ保存されます。共有端末では使用後にトークンを消去してください。
+- アプリ自体は Basic 認証で保護され、第三者の利用を防ぎます。
 
 ## ファイル構成
 
@@ -87,5 +98,6 @@ js/app.js               入力UI・設定・オフラインキュー
 manifest.webmanifest    PWAマニフェスト
 sw.js                   Service Worker（アプリシェルのオフラインキャッシュ）
 icons/                  アイコン（generate_icons.py で再生成可能）
-.github/workflows/      GitHub Pages 自動デプロイ
+.htaccess               HTTPS強制・MIME・キャッシュ・Basic認証(任意)
+deploy.sh.example       Xserver へ SFTP デプロイする雛形（任意）
 ```

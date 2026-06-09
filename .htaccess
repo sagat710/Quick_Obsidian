@@ -1,0 +1,49 @@
+# ===== Quick Obsidian / Apache (Xserver) =====
+
+# --- HTTPS を強制（PWA/Service Worker は HTTPS 必須） ---
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTPS} !=on
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# --- 正しい MIME タイプ ---
+<IfModule mod_mime.c>
+  AddType application/manifest+json .webmanifest
+  AddType text/javascript .js
+  AddType image/png .png
+</IfModule>
+
+# --- Service Worker は常に最新を取得（更新が確実に反映されるように） ---
+<IfModule mod_headers.c>
+  <FilesMatch "sw\.js$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+  </FilesMatch>
+  # アプリ本体やアイコンはキャッシュ可（更新時はファイル名/バージョンで管理）
+  <FilesMatch "\.(css|png|webmanifest)$">
+    Header set Cache-Control "public, max-age=86400"
+  </FilesMatch>
+</IfModule>
+
+# ============================================================
+# Basic 認証（初回のみログイン必須にして他人の利用を防ぐ）
+# ------------------------------------------------------------
+# 【推奨】Xserver のサーバーパネル →「アクセス制限」で対象フォルダを
+#   ON にすると、ユーザー/パスワードを GUI で設定でき、.htaccess と
+#   .htpasswd が自動生成されます（下の手書き設定は不要）。
+#
+# 【手動で設定する場合】下の5行のコメントを外し、AuthUserFile を
+#   サーバー上の .htpasswd の「絶対パス」に書き換えてください。
+#   .htpasswd は以下で生成（ユーザー名 me の例）:
+#       htpasswd -c /home/(アカウント)/(ドメイン)/public_html/quickob/.htpasswd me
+# ------------------------------------------------------------
+# AuthType Basic
+# AuthName "Quick Obsidian"
+# AuthUserFile "/home/アカウント名/ドメイン/public_html/quickob/.htpasswd"
+# Require valid-user
+# ============================================================
+
+# --- 認証ファイル等を外部から読めないように保護 ---
+<FilesMatch "^\.(htpasswd|htaccess)$">
+  Require all denied
+</FilesMatch>
