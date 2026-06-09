@@ -54,21 +54,37 @@
     </header>
 
     <form id="settings-form" class="settings-body" autocomplete="off">
+      <p class="section-label">Cloudflare R2（Remotely Save の同期先）</p>
+
       <label class="field">
-        <span class="label">GitHub トークン (PAT)</span>
-        <input id="cfg-token" type="password" placeholder="github_pat_…" />
-        <small class="hint">Fine-grained PAT。Vaultリポジトリの <code>Contents: Read &amp; write</code> 権限のみで可。端末内 (localStorage) にのみ保存されます。</small>
+        <span class="label">S3 API Endpoint</span>
+        <input id="cfg-endpoint" type="url" placeholder="https://xxxx.r2.cloudflarestorage.com" />
+        <small class="hint">R2の「S3 API」URL。バケット名は含めず、ドメインまで。</small>
       </label>
 
       <label class="field">
-        <span class="label">リポジトリ (owner/repo)</span>
-        <input id="cfg-repo" type="text" placeholder="username/my-vault" />
+        <span class="label">バケット名</span>
+        <input id="cfg-bucket" type="text" placeholder="obsidian-vault" />
       </label>
 
       <label class="field">
-        <span class="label">ブランチ</span>
-        <input id="cfg-branch" type="text" placeholder="main" />
+        <span class="label">Access Key ID</span>
+        <input id="cfg-access" type="text" placeholder="R2 のアクセスキーID" />
       </label>
+
+      <label class="field">
+        <span class="label">Secret Access Key</span>
+        <input id="cfg-secret" type="password" placeholder="R2 のシークレットキー" />
+        <small class="hint">端末内 (localStorage) にのみ保存されます。</small>
+      </label>
+
+      <label class="field">
+        <span class="label">リモートのプレフィックス（任意）</span>
+        <input id="cfg-prefix" type="text" placeholder="（通常は空欄）" />
+        <small class="hint">Remotely Saveで「リモートの基準フォルダ」を設定している場合のみ入力。</small>
+      </label>
+
+      <p class="section-label">メモの保存先</p>
 
       <label class="field">
         <span class="label">新規ノートの保存フォルダ</span>
@@ -95,11 +111,11 @@
     </form>
 
     <footer class="settings-footer">
-      <p>メモはGitHub経由でVaultに直接コミットされます。obsidian-git等でVaultを同期してください。</p>
+      <p>メモはR2に直接保存され、ObsidianのRemotely Save同期で取り込まれます。Remotely Saveの暗号化は<strong>オフ</strong>にしてください。</p>
     </footer>
   </section>
 
-  <script src="js/github.js"></script>
+  <script src="js/s3.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

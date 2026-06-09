@@ -1,7 +1,7 @@
 {
   "name": "Quick Obsidian",
   "short_name": "QuickOb",
-  "description": "スマホからMarkdownメモをObsidian Vault (GitHub) に素早く保存",
+  "description": "スマホからMarkdownメモをObsidian Vault (Cloudflare R2 / Remotely Save) に素早く保存",
   "lang": "ja",
   "start_url": ".",
   "scope": ".",

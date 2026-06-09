@@ -7,9 +7,12 @@
   const DRAFT_KEY = "qo.draft";
 
   const DEFAULTS = {
-    token: "",
-    repo: "",
-    branch: "main",
+    endpoint: "",
+    bucket: "",
+    accessKey: "",
+    secretKey: "",
+    region: "auto",
+    prefix: "",
     folder: "Inbox",
     daily: "Daily/YYYY-MM-DD.md",
     timestamp: true,
@@ -35,9 +38,11 @@
     retryBtn: $("retry-btn"),
     // settings fields
     sForm: $("settings-form"),
-    cToken: $("cfg-token"),
-    cRepo: $("cfg-repo"),
-    cBranch: $("cfg-branch"),
+    cEndpoint: $("cfg-endpoint"),
+    cBucket: $("cfg-bucket"),
+    cAccess: $("cfg-access"),
+    cSecret: $("cfg-secret"),
+    cPrefix: $("cfg-prefix"),
     cFolder: $("cfg-folder"),
     cDaily: $("cfg-daily"),
     cTimestamp: $("cfg-timestamp"),
@@ -59,7 +64,7 @@
     localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
   }
   function isConfigured(cfg) {
-    return cfg.token && cfg.repo && /\S+\/\S+/.test(cfg.repo);
+    return cfg.endpoint && cfg.bucket && cfg.accessKey && cfg.secretKey;
   }
 
   // --- date formatting ---
@@ -157,7 +162,6 @@
         path,
         text: body.trim(),
         header,
-        message: `quick: append to ${path}`,
         ts: now.toISOString(),
       };
     }
@@ -173,16 +177,16 @@
       kind: "new",
       path,
       content,
-      message: `quick: ${base}`,
       ts: now.toISOString(),
     };
   }
 
+  // Returns the actual saved path (may be suffixed if a name collided).
   async function commitItem(cfg, item) {
     if (item.kind === "append") {
-      return GitHub.appendToFile(cfg, item.path, item.text, item.message, item.header);
+      return R2.appendToFile(cfg, item.path, item.text, item.header);
     }
-    return GitHub.createNote(cfg, item.path, item.content, item.message);
+    return R2.createNote(cfg, item.path, item.content);
   }
 
   // --- save handler ---
@@ -190,7 +194,7 @@
     e.preventDefault();
     const cfg = loadConfig();
     if (!isConfigured(cfg)) {
-      setStatus(el.status, "先に設定でGitHubトークンとリポジトリを入力してください", "err");
+      setStatus(el.status, "先に設定でCloudflare R2の接続情報を入力してください", "err");
       openSettings();
       return;
     }
@@ -204,15 +208,16 @@
     setStatus(el.status, "保存中…");
 
     try {
-      await commitItem(cfg, item);
-      setStatus(el.status, `保存しました → ${item.path}`, "ok");
+      const savedPath = await commitItem(cfg, item);
+      setStatus(el.status, `保存しました → ${savedPath || item.path}`, "ok");
       el.title.value = "";
       el.body.value = "";
       localStorage.removeItem(DRAFT_KEY);
       flushQueue(true);
     } catch (err) {
-      // network failure -> queue for later; API errors -> surface them
-      const offline = !navigator.onLine || /Failed to fetch|NetworkError/i.test(err.message);
+      // Genuinely offline -> queue for later. Online failures (auth, CORS,
+      // bad config) are surfaced so the user can fix them.
+      const offline = !navigator.onLine;
       if (offline) {
         enqueue(item);
         setStatus(el.status, "オフラインのため保存待ちに入れました。後で自動送信します。", "ok");
@@ -230,9 +235,11 @@
   // --- settings screen ---
   function openSettings() {
     const cfg = loadConfig();
-    el.cToken.value = cfg.token;
-    el.cRepo.value = cfg.repo;
-    el.cBranch.value = cfg.branch;
+    el.cEndpoint.value = cfg.endpoint;
+    el.cBucket.value = cfg.bucket;
+    el.cAccess.value = cfg.accessKey;
+    el.cSecret.value = cfg.secretKey;
+    el.cPrefix.value = cfg.prefix;
     el.cFolder.value = cfg.folder;
     el.cDaily.value = cfg.daily;
     el.cTimestamp.checked = !!cfg.timestamp;
@@ -246,9 +253,12 @@
   }
   function readSettingsForm() {
     return {
-      token: el.cToken.value.trim(),
-      repo: el.cRepo.value.trim().replace(/^https?:\/\/github\.com\//, "").replace(/\.git$/, ""),
-      branch: el.cBranch.value.trim() || "main",
+      endpoint: el.cEndpoint.value.trim().replace(/\/+$/, ""),
+      bucket: el.cBucket.value.trim(),
+      accessKey: el.cAccess.value.trim(),
+      secretKey: el.cSecret.value.trim(),
+      region: "auto",
+      prefix: el.cPrefix.value.trim(),
       folder: el.cFolder.value.trim(),
       daily: el.cDaily.value.trim() || DEFAULTS.daily,
       timestamp: el.cTimestamp.checked,
@@ -257,8 +267,12 @@
   function onSaveSettings(e) {
     e.preventDefault();
     const cfg = readSettingsForm();
-    if (!cfg.repo || !/\S+\/\S+/.test(cfg.repo)) {
-      setStatus(el.sStatus, "リポジトリは owner/repo 形式で入力してください", "err");
+    if (!isConfigured(cfg)) {
+      setStatus(el.sStatus, "Endpoint・バケット・アクセスキー・シークレットを入力してください", "err");
+      return;
+    }
+    if (!/^https?:\/\//.test(cfg.endpoint)) {
+      setStatus(el.sStatus, "Endpoint は https:// から始まるURLを入力してください", "err");
       return;
     }
     saveConfig(cfg);
@@ -268,15 +282,15 @@
   }
   async function onTest() {
     const cfg = readSettingsForm();
-    if (!cfg.token || !cfg.repo) {
-      setStatus(el.sStatus, "トークンとリポジトリを入力してください", "err");
+    if (!isConfigured(cfg)) {
+      setStatus(el.sStatus, "Endpoint・バケット・キーを入力してください", "err");
       return;
     }
     setStatus(el.sStatus, "接続中…");
     el.testBtn.disabled = true;
     try {
-      const def = await GitHub.testConnection(cfg);
-      setStatus(el.sStatus, `OK：接続成功（既定ブランチ: ${def}）`, "ok");
+      await R2.testConnection(cfg);
+      setStatus(el.sStatus, "OK：R2に接続できました", "ok");
     } catch (err) {
       setStatus(el.sStatus, "失敗: " + err.message, "err");
     } finally {
@@ -348,7 +362,7 @@
 
     if (!isConfigured(loadConfig())) {
       openSettings();
-      setStatus(el.sStatus, "初回設定：GitHubトークンとリポジトリを入力してください");
+      setStatus(el.sStatus, "初回設定：Cloudflare R2 の接続情報を入力してください");
     } else {
       flushQueue(true);
     }

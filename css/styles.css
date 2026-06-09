@@ -191,6 +191,14 @@ body { display: flex; flex-direction: column; }
   flex-direction: column;
   gap: 18px;
 }
+.section-label {
+  margin: 4px 0 -4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+}
 .field { display: flex; flex-direction: column; gap: 7px; }
 .field .label { font-size: 0.9rem; font-weight: 600; }
 .field .hint { color: var(--muted); font-size: 0.78rem; line-height: 1.5; }

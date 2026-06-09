@@ -1,12 +1,12 @@
 /* Service worker: cache the app shell so the capture screen opens offline.
-   GitHub API requests are always passed straight to the network. */
-const CACHE = "quick-obsidian-v1";
+   R2 (S3) requests are cross-origin and always go straight to the network. */
+const CACHE = "quick-obsidian-v2";
 const SHELL = [
   ".",
   "index.html",
   "css/styles.css",
   "js/app.js",
-  "js/github.js",
+  "js/s3.js",
   "manifest.webmanifest",
   "icons/icon-192.png",
   "icons/icon-512.png",
@@ -35,9 +35,7 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
 
-  // Never cache API calls.
-  if (url.hostname === "api.github.com") return;
-  // Only handle same-origin app shell.
+  // Only handle same-origin app shell; R2/S3 calls pass through untouched.
   if (url.origin !== self.location.origin) return;
 
   event.respondWith(
