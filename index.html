@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#7c3aed" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Quick Obsidian" />
+  <title>Quick Obsidian</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- ===== Capture screen ===== -->
+  <main id="capture" class="screen">
+    <header class="topbar">
+      <h1 class="brand">Quick&nbsp;Obsidian</h1>
+      <button id="open-settings" class="icon-btn" aria-label="設定">⚙️</button>
+    </header>
+
+    <form id="note-form" class="editor" autocomplete="off">
+      <div class="mode-switch" role="tablist">
+        <button type="button" class="mode-tab is-active" data-mode="new" role="tab">新規ノート</button>
+        <button type="button" class="mode-tab" data-mode="append" role="tab">デイリーに追記</button>
+      </div>
+
+      <input id="title" class="title-input" type="text" placeholder="タイトル（空ならファイル名は日時）" />
+
+      <textarea id="body" class="body-input" placeholder="ここにメモを Markdown で…" autofocus></textarea>
+
+      <div id="status" class="status" role="status" aria-live="polite"></div>
+
+      <div class="actions">
+        <button id="clear-btn" type="button" class="btn ghost">クリア</button>
+        <button id="save-btn" type="submit" class="btn primary">Obsidian に保存</button>
+      </div>
+    </form>
+
+    <div id="queue-banner" class="queue-banner hidden">
+      <span id="queue-text"></span>
+      <button id="retry-btn" class="btn small">今すぐ再送</button>
+    </div>
+  </main>
+
+  <!-- ===== Settings screen ===== -->
+  <section id="settings" class="screen hidden">
+    <header class="topbar">
+      <button id="close-settings" class="icon-btn" aria-label="戻る">←</button>
+      <h1 class="brand">設定</h1>
+      <span class="icon-btn" aria-hidden="true"></span>
+    </header>
+
+    <form id="settings-form" class="settings-body" autocomplete="off">
+      <label class="field">
+        <span class="label">GitHub トークン (PAT)</span>
+        <input id="cfg-token" type="password" placeholder="github_pat_…" />
+        <small class="hint">Fine-grained PAT。Vaultリポジトリの <code>Contents: Read &amp; write</code> 権限のみで可。端末内 (localStorage) にのみ保存されます。</small>
+      </label>
+
+      <label class="field">
+        <span class="label">リポジトリ (owner/repo)</span>
+        <input id="cfg-repo" type="text" placeholder="username/my-vault" />
+      </label>
+
+      <label class="field">
+        <span class="label">ブランチ</span>
+        <input id="cfg-branch" type="text" placeholder="main" />
+      </label>
+
+      <label class="field">
+        <span class="label">新規ノートの保存フォルダ</span>
+        <input id="cfg-folder" type="text" placeholder="Inbox" />
+        <small class="hint">Vault内の相対パス。空ならルート直下。</small>
+      </label>
+
+      <label class="field">
+        <span class="label">デイリーノートのパス書式</span>
+        <input id="cfg-daily" type="text" placeholder="Daily/YYYY-MM-DD.md" />
+        <small class="hint"><code>YYYY MM DD HH mm</code> が日時に置換されます。</small>
+      </label>
+
+      <label class="field checkbox">
+        <input id="cfg-timestamp" type="checkbox" />
+        <span>追記時に時刻見出し (<code>- HH:mm</code>) を付ける</span>
+      </label>
+
+      <div class="actions">
+        <button id="test-btn" type="button" class="btn ghost">接続テスト</button>
+        <button id="save-settings" type="submit" class="btn primary">保存</button>
+      </div>
+      <div id="settings-status" class="status" role="status" aria-live="polite"></div>
+    </form>
+
+    <footer class="settings-footer">
+      <p>メモはGitHub経由でVaultに直接コミットされます。obsidian-git等でVaultを同期してください。</p>
+    </footer>
+  </section>
+
+  <script src="js/github.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
